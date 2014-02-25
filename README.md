@@ -1,6 +1,6 @@
 ﻿# KoMvvm [![Build Status](https://travis-ci.org/spatools/komvvm.png)](https://travis-ci.org/spatools/komvvm) [![Bower version](https://badge.fury.io/bo/komvvm.png)](http://badge.fury.io/bo/komvvm) [![NuGet version](https://badge.fury.io/nu/komvvm.png)](http://badge.fury.io/nu/komvvm)
 
-Knockout Utilities Extensions to simplify Knockout app development.
+Knockout Utilities Extensions to simplify Knockout app development using MVVM Pattern.
 
 ## Installation
 
@@ -29,6 +29,7 @@ requirejs.config({
     paths: {
         knockout: 'path/to/knockout',
         underscore: 'path/to/underscore',
+        koutils: 'path/to/koutils',
         komvvm: 'path/to/komvvm'
     }
 });
@@ -55,9 +56,10 @@ Include built script in your HTML file.
 ```html
 <script type="text/javascript" src="path/to/knockout.js"></script>
 <script type="text/javascript" src="path/to/underscore.js"></script>
+<script type="text/javascript" src="path/to/koutils.min.js"></script>
 <script type="text/javascript" src="path/to/komvvm.min.js"></script>
 ```
 
 ## Documentation
 
-For now documentation can be found in code.
+Documentation is hosted on [Github Wiki](https://github.com/spatools/komvvm/wiki).
