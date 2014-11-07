@@ -77,12 +77,12 @@ export function unsubscribe (topic, callback) {
         return;
     }
 
-    var index = -1;
-    _.find(subscriptions[topic], (subscription, i: number) => {
-        index = i;
-        return subscription.callback === callback;
-    });
+    var index = -1,
+		callbackSubscription = _.find(subscriptions[topic], (subscription, i: number) => {
+			index = i;
+			return subscription.callback === callback;
+		});
 
-    if (index !== -1)
+    if (callbackSubscription !== undefined)
         subscriptions[topic].splice(index, 1);
 }
