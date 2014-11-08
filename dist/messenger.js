@@ -18,7 +18,7 @@ define(["require", "exports", "underscore", "koutils/underscore"], function(requ
 
         _.find(_subscriptions, function (subscription) {
             result = subscription.callback.apply(subscription.context, args);
-            return (result === false);
+            return result === false;
         });
 
         while (index !== -1) {
@@ -39,8 +39,9 @@ define(["require", "exports", "underscore", "koutils/underscore"], function(requ
         var topics = topic.split(/\s/), _options = _.extend({ priority: priority }, options);
 
         _.each(topics, function (t) {
-            if (!subscriptions[topic])
+            if (!subscriptions[topic]) {
                 subscriptions[topic] = [];
+            }
 
             subscriptions[topic].push({
                 callback: callback,
@@ -63,14 +64,13 @@ define(["require", "exports", "underscore", "koutils/underscore"], function(requ
             return;
         }
 
-        var index = -1,
-			callbackSubscription = _.find(subscriptions[topic], function (subscription, i) {
-				index = i;
-				return subscription.callback === callback;
-			});
+        var index = _.index(subscriptions[topic], function (sub) {
+            return sub.callback === callback;
+        });
 
-        if (callbackSubscription !== undefined)
+        if (index !== -1) {
             subscriptions[topic].splice(index, 1);
+        }
     }
     exports.unsubscribe = unsubscribe;
 });
