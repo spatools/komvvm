@@ -9,7 +9,7 @@ var priority: number = 1,
 interface Subscription {
     priority: number;
     context: any;
-    callback: () => any;
+    callback: Function;
     once?: boolean;
 }
 
@@ -25,15 +25,15 @@ export function publish(topic: string, ...args: any[]): boolean {
         return true;
     }
 
-    var _subscriptions = _.sortBy(subscriptions[topic], function (s) { return s.priority; }),
+    var _subscriptions = _.sortBy(subscriptions[topic], s => s.priority),
         indexFunction = s => s.once,
         result, index;
 
-    _.find(_subscriptions, function (subscription) {
+    _.find(_subscriptions, (subscription: Subscription) => {
         result = subscription.callback.apply(subscription.context, args);
-        return (result === false);
+        return result === false;
     });
-    
+
     while (index !== -1) {
         index = _.index(subscriptions[topic], indexFunction);
         if (index !== -1)
@@ -53,8 +53,9 @@ export function subscribe(topic: string, callback: () => void, options?: Subscri
         _options = _.extend({ priority: priority }, options);
 
     _.each(topics, function (t) {
-        if (!subscriptions[topic])
+        if (!subscriptions[topic]) {
             subscriptions[topic] = [];
+        }
 
         subscriptions[topic].push({
             callback: callback,
@@ -77,12 +78,9 @@ export function unsubscribe (topic, callback) {
         return;
     }
 
-    var index = -1,
-		callbackSubscription = _.find(subscriptions[topic], (subscription, i: number) => {
-			index = i;
-			return subscription.callback === callback;
-		});
+    var index = _.index(subscriptions[topic], sub => sub.callback === callback);
 
-    if (callbackSubscription !== undefined)
+    if (index !== -1) {
         subscriptions[topic].splice(index, 1);
+    }
 }
