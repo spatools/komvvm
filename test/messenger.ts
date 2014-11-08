@@ -175,4 +175,40 @@ describe("Messenger", () => {
         });
 
     });
+
+    describe("unsubscribe method", () => {
+
+        it("should remove subscription matched by given callback from topic", () => {
+            var topic = "__SPA_TEST_TOPIC__",
+                spy1 = sinon.spy(),
+                spy2 = sinon.spy();
+
+            messenger.subscribe(topic, spy1);
+            messenger.publish(topic);
+
+            messenger.unsubscribe(topic, spy1);
+
+            messenger.publish(topic);
+
+            sinon.assert.calledOnce(spy1);
+        });
+
+        it("should not remove any subscription if nothing matched the given callback", () => {
+            var topic = "__SPA_TEST_TOPIC__",
+                spy1 = sinon.spy(),
+                spy2 = sinon.spy();
+
+            messenger.subscribe(topic, spy1);
+            messenger.publish(topic);
+
+            messenger.unsubscribe(topic, spy2);
+
+            messenger.publish(topic);
+
+            messenger.unsubscribe(topic, spy1);
+
+            sinon.assert.calledTwice(spy1);
+        });
+
+    });
 });
