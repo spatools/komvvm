@@ -67,3 +67,4 @@ Documentation is hosted on [Github Wiki](https://github.com/spatools/komvvm/wiki
 ## Release History
 0.1.0 Initial release
 0.1.1 Fix issue in unsubscribe method when giving a callback which is not subscribed
+0.1.2 Update typescript to version 1.1
