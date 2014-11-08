@@ -180,8 +180,7 @@ describe("Messenger", () => {
 
         it("should remove subscription matched by given callback from topic", () => {
             var topic = "__SPA_TEST_TOPIC__",
-                spy1 = sinon.spy(),
-                spy2 = sinon.spy();
+                spy1 = sinon.spy();
 
             messenger.subscribe(topic, spy1);
             messenger.publish(topic);
