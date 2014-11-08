@@ -22,7 +22,7 @@ export class Command {
     private context: any;
 
     public canExecute: KnockoutComputed<boolean>;
-    
+
     constructor(options: CommandOptions) {
         this.canExecuteCallback = options.canExecute;
         this.executeCallback = options.execute;
