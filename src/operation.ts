@@ -104,7 +104,7 @@ ko.bindingHandlers.loader = {
     },
     update: function (element: HTMLElement, valueAccessor: () => any, allBindingsAccessor: () => any, viewModel: any, bindingContext: KnockoutBindingContext) {
         var value = ko.unwrap(valueAccessor()),
-            operations: Array<any>, isVisible: boolean;
+            operations: Array<OperationFunction>, isVisible: boolean;
 
         if (_.isBoolean(value))
             isVisible = value;
@@ -118,7 +118,7 @@ ko.bindingHandlers.loader = {
         }
 
         if (_.isUndefined(isVisible) || _.isNull(isVisible)) {
-            isVisible = _.any(operations, function (op) { return op.isExecuting(); });
+            isVisible = _.any(operations, (op: OperationFunction) => op.isExecuting());
         }
 
         ko.bindingHandlers.visible.update(element, utils.createAccessor(isVisible), allBindingsAccessor, viewModel, bindingContext);
