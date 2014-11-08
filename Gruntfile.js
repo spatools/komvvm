@@ -42,7 +42,7 @@ module.exports = function (grunt) {
                 src: "<%= paths.src %>/**/*.ts",
                 dest: "<%= paths.temp %>/",
                 options: {
-                    base_path: '<%= paths.src %>',
+                    basePath: '<%= paths.src %>',
                     declaration: true
                 }
             },
@@ -50,7 +50,7 @@ module.exports = function (grunt) {
                 src: "<%= paths.src %>/**/*.ts",
                 dest: "<%= paths.build %>/",
                 options: {
-                    base_path: '<%= paths.src %>'
+                    basePath: '<%= paths.src %>'
                 }
             }
         },
