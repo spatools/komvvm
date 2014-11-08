@@ -44,7 +44,7 @@ export function publish(topic: string, ...args: any[]): boolean {
 }
 
 /** Publish message with specified options in the given topic */
-export function subscribe(topic: string, callback: () => void, options?: SubscribeOptions): void {
+export function subscribe(topic: string, callback: Function, options?: SubscribeOptions): void {
     if (!topic || !callback) {
         throw new Error("missing topic or callback argument");
     }
@@ -67,13 +67,17 @@ export function subscribe(topic: string, callback: () => void, options?: Subscri
 }
 
 /** Subscribe for the next iteration of the specified topic with given callback and options */
-export function subscribeNext(topic: string, callback: () => void, options?: SubscribeOptions): void {
-    var _options = _.extend({ once: true }, options);
-    subscribe(topic, callback, _options);
+export function subscribeNext(topic: string, callback: Function, options?: SubscribeOptions): void {
+    if (!options) {
+        options = {};
+    }
+    options.once = true;
+
+    this.subscribe(topic, callback, options);
 }
 
 /** Publish message with specified options in the given topic */
-export function unsubscribe (topic, callback) {
+export function unsubscribe(topic: string, callback: Function) {
     if (!subscriptions[topic]) {
         return;
     }
