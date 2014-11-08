@@ -63,13 +63,13 @@ define(["require", "exports", "underscore", "koutils/underscore"], function(requ
             return;
         }
 
-        var index = -1;
-        _.find(subscriptions[topic], function (subscription, i) {
-            index = i;
-            return subscription.callback === callback;
-        });
+        var index = -1,
+			callbackSubscription = _.find(subscriptions[topic], function (subscription, i) {
+				index = i;
+				return subscription.callback === callback;
+			});
 
-        if (index !== -1)
+        if (callbackSubscription !== undefined)
             subscriptions[topic].splice(index, 1);
     }
     exports.unsubscribe = unsubscribe;
