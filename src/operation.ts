@@ -1,7 +1,4 @@
-/// <reference path="../_definitions.d.ts" />
-
 import ko = require("knockout");
-import _ = require("underscore");
 import messenger = require("./messenger");
 import utils = require("koutils/utils");
 
@@ -27,7 +24,7 @@ function Operation (options: OperationOptions): OperationFunction {
         onComplete = function () {
             var args = Array.prototype.slice.call(arguments, 0);
 
-            if (_.isFunction(options.complete))
+            if (utils.is(options.complete, "function"))
                 options.complete.apply(this, args);
 
             if (message)
@@ -43,7 +40,7 @@ function Operation (options: OperationOptions): OperationFunction {
             progress(0); progressDetails({});
         },
         onError = function (_error, _errorDetails) {
-            if (_.isFunction(options.error))
+            if (utils.is(options.error, "function"))
                 options.error.apply(this, arguments);
 
             error(_error);
@@ -51,7 +48,7 @@ function Operation (options: OperationOptions): OperationFunction {
             isExecuting(false);
         },
         onProgress = function (_progress, _progressDetails) {
-            if (_.isFunction(options.progress))
+            if (utils.is(options.progress, "function"))
                 options.progress.apply(this, arguments);
 
             progress(_progress);
@@ -74,7 +71,7 @@ function Operation (options: OperationOptions): OperationFunction {
             if (useArgs)
                 args.unshift(Array.prototype.slice.call(arguments, 0));
 
-            if (_.isFunction(options.execute)) {
+            if (utils.is(options.execute, "function")) {
                 options.execute.apply(this, args);
             }
         };
@@ -99,16 +96,17 @@ ko.bindingHandlers.loader = {
 
         if (template) {
             ko.renderTemplate(template, bindingContext, {}, element);
-            return { "controlsDescendantBindings": true };
+            return { controlsDescendantBindings: true };
         }
     },
     update: function (element: HTMLElement, valueAccessor: () => any, allBindingsAccessor: () => any, viewModel: any, bindingContext: KnockoutBindingContext) {
         var value = ko.unwrap(valueAccessor()),
+            valueType = typeof value,
             operations: Array<OperationFunction>, isVisible: boolean;
 
-        if (_.isBoolean(value))
+        if (valueType === "boolean")
             isVisible = value;
-        else if (_.isArray(value))
+        else if (valueType === "array")
             operations = value;
         else {
             isVisible = ko.unwrap(value.isVisible);
@@ -117,8 +115,8 @@ ko.bindingHandlers.loader = {
                 operations.push(ko.unwrap(value.operation));
         }
 
-        if (_.isUndefined(isVisible) || _.isNull(isVisible)) {
-            isVisible = _.any(operations, (op: OperationFunction) => op.isExecuting());
+        if (utils.isNullOrUndefined(isVisible)) {
+            isVisible = operations.some(op => op.isExecuting());
         }
 
         ko.bindingHandlers.visible.update(element, utils.createAccessor(isVisible), allBindingsAccessor, viewModel, bindingContext);

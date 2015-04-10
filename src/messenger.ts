@@ -1,8 +1,3 @@
-/// <reference path="../_definitions.d.ts" />
-/// <amd-dependency path="koutils/underscore" />
-
-import _ = require("underscore");
-
 var priority: number = 1,
     subscriptions: { [key: string]: Subscription[] } = {};
 
@@ -19,28 +14,46 @@ export interface SubscribeOptions {
     once?: boolean;
 }
 
+function sortFunction(a: Subscription, b: Subscription): number {
+    return a.priority - b.priority;
+}
+
 /** Publish message with specified options in the given topic */
 export function publish(topic: string, ...args: any[]): boolean {
     if (!subscriptions[topic]) {
         return true;
     }
 
-    var _subscriptions = _.sortBy(subscriptions[topic], s => s.priority),
-        indexFunction = s => s.once,
-        result, index;
+    var subs = subscriptions[topic],
+        _subscriptions = subs.sort(sortFunction),
+        result = true,
 
-    _.find(_subscriptions, (subscription: Subscription) => {
-        result = subscription.callback.apply(subscription.context, args);
-        return result === false;
-    });
+        i = 0, len = subs.length,
+        sub: Subscription;
 
-    while (index !== -1) {
-        index = _.index(subscriptions[topic], indexFunction);
-        if (index !== -1)
-            subscriptions[topic].splice(index, 1);
+    for (; i < len; i++) {
+        sub = _subscriptions[i];
+
+        if (sub.callback.apply(sub.context, args) === false) {
+            result = false;
+            break;
+        }
     }
 
-    return result !== false;
+    i = 0;
+    sub = subs[0];
+
+    while (!!sub) {
+        if (sub.once) {
+            subs.splice(i, 1);
+            sub = subs[i];
+        }
+        else {
+            sub = subs[++i];
+        }
+    }
+
+    return result;
 }
 
 /** Publish message with specified options in the given topic */
@@ -49,19 +62,24 @@ export function subscribe(topic: string, callback: Function, options?: Subscribe
         throw new Error("missing topic or callback argument");
     }
 
-    var topics = topic.split(/\s/),
-        _options = _.extend({ priority: priority }, options);
+    if (!options) {
+        options = {};
+    }
 
-    _.each(topics, function (t) {
-        if (!subscriptions[topic]) {
-            subscriptions[topic] = [];
+    if (typeof options.priority === "undefined") {
+        options.priority = priority;
+    }
+
+    topic.split(/\s/g).forEach(t => {
+        if (!subscriptions[t]) {
+            subscriptions[t] = [];
         }
 
-        subscriptions[topic].push({
+        subscriptions[t].push({
             callback: callback,
-            context: _options.context,
-            priority: _options.priority,
-            once: _options.once
+            context: options.context,
+            priority: options.priority,
+            once: options.once
         });
     });
 }
@@ -77,14 +95,21 @@ export function subscribeNext(topic: string, callback: Function, options?: Subsc
 }
 
 /** Publish message with specified options in the given topic */
-export function unsubscribe(topic: string, callback: Function) {
+export function unsubscribe(topic: string, callback: Function): void {
     if (!subscriptions[topic]) {
         return;
     }
 
-    var index = _.index(subscriptions[topic], sub => sub.callback === callback);
+    var subs = subscriptions[topic],
+        i = 0, len = subs.length,
+        sub: Subscription;
 
-    if (index !== -1) {
-        subscriptions[topic].splice(index, 1);
+    for (; i < len; i++) {
+        sub = subs[i];
+
+        if (sub.callback === callback) {
+            subs.splice(i, 1);
+            break;
+        }
     }
 }

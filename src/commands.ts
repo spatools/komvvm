@@ -1,7 +1,4 @@
-/// <reference path="../_definitions.d.ts" />
-
 import ko = require("knockout");
-import _ = require("underscore");
 import utils = require("koutils/utils");
 
 export interface CommandOptions {
@@ -68,7 +65,7 @@ export class AsyncCommand {
             if (this.executeCallback.length === 2)
                 args.push($data);
 
-            args.push(_.bind(this.completeCallback, this));
+            args.push(this.completeCallback.bind(this));
 
             this.isExecuting(true);
             this.executeCallback.apply(this.context, args);
@@ -81,32 +78,41 @@ export class AsyncCommand {
         var value = valueAccessor(),
             commands = !!value.execute ? { click: value } : value,
             events = {},
-            bindings: any = {};
+            bindings: any = {},
+            hasEvent = false,
+            event: string, command: Command,
+            binding: string, bindingValue: any;
 
-        _.each(commands, (command: Command, event?: string) => {
-            if (ko.bindingHandlers[event]) {
-                bindings[event] = _.bind(command.execute, command);
-            } else {
-                events[event] = _.bind(command.execute, command);
+        for (event in commands) {
+            if ((command = commands[event])) {
+                if (ko.bindingHandlers[event]) {
+                    bindings[event] = command.execute.bind(command);
+                }
+                else {
+                    events[event] = command.execute.bind(command);
+                    hasEvent = true;
+                }
             }
-        }),
+        }
 
-        _.each(bindings, (bindingValue, binding?) => {
-            ko.bindingHandlers[binding].init(element, utils.createAccessor(bindingValue), allBindingsAccessor, viewModel, bindingContext);
-        });
+        for (binding in bindings) {
+            if ((bindingValue = bindings[binding])) {
+                ko.bindingHandlers[binding].init(element, utils.createAccessor(bindingValue), allBindingsAccessor, viewModel, bindingContext);
+            }
+        }
 
-        if (_.size(events) > 0)
+        if (hasEvent) {
             ko.bindingHandlers.event.init(element, utils.createAccessor(events), allBindingsAccessor, viewModel, bindingContext);
+        }
     },
     update: function (element: HTMLElement, valueAccessor: () => any, allBindingsAccessor: () => any, viewModel: any, bindingContext: KnockoutBindingContext) {
         var value = valueAccessor(),
             commands = !!value.execute ? { click: value } : value,
             result = true;
 
-        _.find(commands, (command: Command) => {
-            result = command.canExecute();
-            return !result;
-        });
+        if (commands.click) {
+            result = commands.click.canExecute();
+        }
 
         ko.bindingHandlers.enable.update(element, utils.createAccessor(result), allBindingsAccessor, viewModel, bindingContext);
     }
