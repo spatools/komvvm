@@ -29,7 +29,7 @@
     "test"
   ],
   "dependencies": {
-    "koutils": ">=0.1.0"
+    "koutils": "~1.0.1"
   },
   "devDependencies": {
     "mocha": "~1.17.1",
