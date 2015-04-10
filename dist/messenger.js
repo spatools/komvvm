@@ -1,7 +1,8 @@
-/// <reference path="../_definitions.d.ts" />
-/// <amd-dependency path="koutils/underscore" />
-define(["require", "exports", "underscore", "koutils/underscore"], function (require, exports, _) {
+define(["require", "exports"], function (require, exports) {
     var priority = 1, subscriptions = {};
+    function sortFunction(a, b) {
+        return a.priority - b.priority;
+    }
     /** Publish message with specified options in the given topic */
     function publish(topic) {
         var args = [];
@@ -11,17 +12,26 @@ define(["require", "exports", "underscore", "koutils/underscore"], function (req
         if (!subscriptions[topic]) {
             return true;
         }
-        var _subscriptions = _.sortBy(subscriptions[topic], function (s) { return s.priority; }), indexFunction = function (s) { return s.once; }, result, index;
-        _.find(_subscriptions, function (subscription) {
-            result = subscription.callback.apply(subscription.context, args);
-            return result === false;
-        });
-        while (index !== -1) {
-            index = _.index(subscriptions[topic], indexFunction);
-            if (index !== -1)
-                subscriptions[topic].splice(index, 1);
+        var subs = subscriptions[topic], _subscriptions = subs.sort(sortFunction), result = true, i = 0, len = subs.length, sub;
+        for (; i < len; i++) {
+            sub = _subscriptions[i];
+            if (sub.callback.apply(sub.context, args) === false) {
+                result = false;
+                break;
+            }
         }
-        return result !== false;
+        i = 0;
+        sub = subs[0];
+        while (!!sub) {
+            if (sub.once) {
+                subs.splice(i, 1);
+                sub = subs[i];
+            }
+            else {
+                sub = subs[++i];
+            }
+        }
+        return result;
     }
     exports.publish = publish;
     /** Publish message with specified options in the given topic */
@@ -29,16 +39,21 @@ define(["require", "exports", "underscore", "koutils/underscore"], function (req
         if (!topic || !callback) {
             throw new Error("missing topic or callback argument");
         }
-        var topics = topic.split(/\s/), _options = _.extend({ priority: priority }, options);
-        _.each(topics, function (t) {
-            if (!subscriptions[topic]) {
-                subscriptions[topic] = [];
+        if (!options) {
+            options = {};
+        }
+        if (typeof options.priority === "undefined") {
+            options.priority = priority;
+        }
+        topic.split(/\s/g).forEach(function (t) {
+            if (!subscriptions[t]) {
+                subscriptions[t] = [];
             }
-            subscriptions[topic].push({
+            subscriptions[t].push({
                 callback: callback,
-                context: _options.context,
-                priority: _options.priority,
-                once: _options.once
+                context: options.context,
+                priority: options.priority,
+                once: options.once
             });
         });
     }
@@ -57,9 +72,13 @@ define(["require", "exports", "underscore", "koutils/underscore"], function (req
         if (!subscriptions[topic]) {
             return;
         }
-        var index = _.index(subscriptions[topic], function (sub) { return sub.callback === callback; });
-        if (index !== -1) {
-            subscriptions[topic].splice(index, 1);
+        var subs = subscriptions[topic], i = 0, len = subs.length, sub;
+        for (; i < len; i++) {
+            sub = subs[i];
+            if (sub.callback === callback) {
+                subs.splice(i, 1);
+                break;
+            }
         }
     }
     exports.unsubscribe = unsubscribe;

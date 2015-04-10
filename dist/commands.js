@@ -1,5 +1,4 @@
-/// <reference path="../_definitions.d.ts" />
-define(["require", "exports", "knockout", "underscore", "koutils/utils"], function (require, exports, ko, _, utils) {
+define(["require", "exports", "knockout", "koutils/utils"], function (require, exports, ko, utils) {
     var Command = (function () {
         function Command(options) {
             this.canExecuteCallback = options.canExecute;
@@ -34,7 +33,7 @@ define(["require", "exports", "knockout", "underscore", "koutils/utils"], functi
                 var args = [];
                 if (this.executeCallback.length === 2)
                     args.push($data);
-                args.push(_.bind(this.completeCallback, this));
+                args.push(this.completeCallback.bind(this));
                 this.isExecuting(true);
                 this.executeCallback.apply(this.context, args);
             }
@@ -44,26 +43,32 @@ define(["require", "exports", "knockout", "underscore", "koutils/utils"], functi
     exports.AsyncCommand = AsyncCommand;
     ko.bindingHandlers.command = {
         init: function (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
-            var value = valueAccessor(), commands = !!value.execute ? { click: value } : value, events = {}, bindings = {};
-            _.each(commands, function (command, event) {
-                if (ko.bindingHandlers[event]) {
-                    bindings[event] = _.bind(command.execute, command);
+            var value = valueAccessor(), commands = !!value.execute ? { click: value } : value, events = {}, bindings = {}, hasEvent = false, event, command, binding, bindingValue;
+            for (event in commands) {
+                if ((command = commands[event])) {
+                    if (ko.bindingHandlers[event]) {
+                        bindings[event] = command.execute.bind(command);
+                    }
+                    else {
+                        events[event] = command.execute.bind(command);
+                        hasEvent = true;
+                    }
                 }
-                else {
-                    events[event] = _.bind(command.execute, command);
+            }
+            for (binding in bindings) {
+                if ((bindingValue = bindings[binding])) {
+                    ko.bindingHandlers[binding].init(element, utils.createAccessor(bindingValue), allBindingsAccessor, viewModel, bindingContext);
                 }
-            }), _.each(bindings, function (bindingValue, binding) {
-                ko.bindingHandlers[binding].init(element, utils.createAccessor(bindingValue), allBindingsAccessor, viewModel, bindingContext);
-            });
-            if (_.size(events) > 0)
+            }
+            if (hasEvent) {
                 ko.bindingHandlers.event.init(element, utils.createAccessor(events), allBindingsAccessor, viewModel, bindingContext);
+            }
         },
         update: function (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
             var value = valueAccessor(), commands = !!value.execute ? { click: value } : value, result = true;
-            _.find(commands, function (command) {
-                result = command.canExecute();
-                return !result;
-            });
+            if (commands.click) {
+                result = commands.click.canExecute();
+            }
             ko.bindingHandlers.enable.update(element, utils.createAccessor(result), allBindingsAccessor, viewModel, bindingContext);
         }
     };

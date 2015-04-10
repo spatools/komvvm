@@ -1,5 +1,4 @@
 /// <reference path="../../../typings/knockout/knockout.d.ts" />
-/// <reference path="../../../typings/underscore/underscore.d.ts" />
 
 interface OperationOptions {
     useArguments?: boolean;

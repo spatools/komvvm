@@ -1,10 +1,9 @@
-/// <reference path="../_definitions.d.ts" />
-define(["require", "exports", "knockout", "underscore", "./messenger", "koutils/utils"], function (require, exports, ko, _, messenger, utils) {
+define(["require", "exports", "knockout", "./messenger", "koutils/utils"], function (require, exports, ko, messenger, utils) {
     /** Create an async operation which result can be cached and progress can be tracked */
     function Operation(options) {
         var cache = options.cache || false, cacheDuration = options.cacheDuration || 60 * 5, useArgs = options.useArguments || false, message = options.message || null, lastExecution = null, memory = null, isExecuting = ko.observable(false), progress = ko.observable(0), progressDetails = ko.observable({}), error = ko.observable(""), errorDetails = ko.observable({}), hasError = ko.computed(function () { return utils.isNullOrWhiteSpace(error()); }), onComplete = function () {
             var args = Array.prototype.slice.call(arguments, 0);
-            if (_.isFunction(options.complete))
+            if (utils.is(options.complete, "function"))
                 options.complete.apply(this, args);
             if (message)
                 messenger.publish(message + "Response", args);
@@ -18,13 +17,13 @@ define(["require", "exports", "knockout", "underscore", "./messenger", "koutils/
             progress(0);
             progressDetails({});
         }, onError = function (_error, _errorDetails) {
-            if (_.isFunction(options.error))
+            if (utils.is(options.error, "function"))
                 options.error.apply(this, arguments);
             error(_error);
             errorDetails(_errorDetails);
             isExecuting(false);
         }, onProgress = function (_progress, _progressDetails) {
-            if (_.isFunction(options.progress))
+            if (utils.is(options.progress, "function"))
                 options.progress.apply(this, arguments);
             progress(_progress);
             progressDetails(_progressDetails);
@@ -42,7 +41,7 @@ define(["require", "exports", "knockout", "underscore", "./messenger", "koutils/
             }
             if (useArgs)
                 args.unshift(Array.prototype.slice.call(arguments, 0));
-            if (_.isFunction(options.execute)) {
+            if (utils.is(options.execute, "function")) {
                 options.execute.apply(this, args);
             }
         };
@@ -61,14 +60,14 @@ define(["require", "exports", "knockout", "underscore", "./messenger", "koutils/
             var value = ko.unwrap(valueAccessor()), template = ko.unwrap(value.template);
             if (template) {
                 ko.renderTemplate(template, bindingContext, {}, element);
-                return { "controlsDescendantBindings": true };
+                return { controlsDescendantBindings: true };
             }
         },
         update: function (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
-            var value = ko.unwrap(valueAccessor()), operations, isVisible;
-            if (_.isBoolean(value))
+            var value = ko.unwrap(valueAccessor()), valueType = typeof value, operations, isVisible;
+            if (valueType === "boolean")
                 isVisible = value;
-            else if (_.isArray(value))
+            else if (valueType === "array")
                 operations = value;
             else {
                 isVisible = ko.unwrap(value.isVisible);
@@ -76,8 +75,8 @@ define(["require", "exports", "knockout", "underscore", "./messenger", "koutils/
                 if (value.operation)
                     operations.push(ko.unwrap(value.operation));
             }
-            if (_.isUndefined(isVisible) || _.isNull(isVisible)) {
-                isVisible = _.any(operations, function (op) { return op.isExecuting(); });
+            if (utils.isNullOrUndefined(isVisible)) {
+                isVisible = operations.some(function (op) { return op.isExecuting(); });
             }
             ko.bindingHandlers.visible.update(element, utils.createAccessor(isVisible), allBindingsAccessor, viewModel, bindingContext);
         }
