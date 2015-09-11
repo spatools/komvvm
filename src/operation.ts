@@ -1,9 +1,16 @@
 import ko = require("knockout");
 import messenger = require("./messenger");
-import utils = require("koutils/utils");
+
+function isFunction(fn: any): boolean {
+    return typeof fn === "function";
+}
+
+function isNullOrWhiteSpace(value: string): boolean {
+    return !value || (/^\s*$/).test(value);
+}
 
 /** Create an async operation which result can be cached and progress can be tracked */
-function Operation (options: OperationOptions): OperationFunction {
+function Operation(options: OperationOptions): OperationFunction {
     var
         cache = options.cache || false,
         cacheDuration = options.cacheDuration || 60 * 5,
@@ -19,12 +26,12 @@ function Operation (options: OperationOptions): OperationFunction {
         error = ko.observable(""),
         errorDetails = ko.observable({}),
 
-        hasError = ko.computed(() => utils.isNullOrWhiteSpace(error())),
+        hasError = ko.pureComputed(() => !isNullOrWhiteSpace(error())),
 
         onComplete = function () {
             var args = Array.prototype.slice.call(arguments, 0);
 
-            if (utils.is(options.complete, "function"))
+            if (isFunction(options.complete))
                 options.complete.apply(this, args);
 
             if (message)
@@ -40,7 +47,7 @@ function Operation (options: OperationOptions): OperationFunction {
             progress(0); progressDetails({});
         },
         onError = function (_error, _errorDetails) {
-            if (utils.is(options.error, "function"))
+            if (isFunction(options.error))
                 options.error.apply(this, arguments);
 
             error(_error);
@@ -48,7 +55,7 @@ function Operation (options: OperationOptions): OperationFunction {
             isExecuting(false);
         },
         onProgress = function (_progress, _progressDetails) {
-            if (utils.is(options.progress, "function"))
+            if (isFunction(options.progress))
                 options.progress.apply(this, arguments);
 
             progress(_progress);
@@ -71,7 +78,7 @@ function Operation (options: OperationOptions): OperationFunction {
             if (useArgs)
                 args.unshift(Array.prototype.slice.call(arguments, 0));
 
-            if (utils.is(options.execute, "function")) {
+            if (isFunction(options.execute)) {
                 options.execute.apply(this, args);
             }
         };
@@ -99,7 +106,7 @@ ko.bindingHandlers.loader = {
             return { controlsDescendantBindings: true };
         }
     },
-    update: function (element: HTMLElement, valueAccessor: () => any, allBindingsAccessor: () => any, viewModel: any, bindingContext: KnockoutBindingContext) {
+    update: function (element: HTMLElement, valueAccessor: () => any, allBindingsAccessor: KnockoutAllBindingsAccessor, viewModel: any, bindingContext: KnockoutBindingContext) {
         var value = ko.unwrap(valueAccessor()),
             valueType = typeof value,
             operations: Array<OperationFunction>, isVisible: boolean;
@@ -115,11 +122,11 @@ ko.bindingHandlers.loader = {
                 operations.push(ko.unwrap(value.operation));
         }
 
-        if (utils.isNullOrUndefined(isVisible)) {
+        if (typeof isVisible === "undefined" || isVisible === null) {
             isVisible = operations.some(op => op.isExecuting());
         }
 
-        ko.bindingHandlers.visible.update(element, utils.createAccessor(isVisible), allBindingsAccessor, viewModel, bindingContext);
+        ko.bindingHandlers.visible.update(element, () => isVisible, allBindingsAccessor, viewModel, bindingContext);
     }
 };
 
