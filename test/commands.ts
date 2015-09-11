@@ -180,6 +180,25 @@ describe("AsyncCommand", () => {
             sinon.assert.calledWith(executeSpy, commandParam, sinon.match.func);
         });
 
+        it("should execute execute complete callback automatically if a thenable object is provided", () => {
+            var thenable = { resolve: null, then: function (onResolve) {
+                this.resolve = onResolve;
+            } };
+
+            var command = new commands.AsyncCommand({
+                canExecute: () => true,
+                execute: () => thenable
+            });
+
+            command.execute();
+
+            command.isExecuting().should.be.ok;
+
+            thenable.resolve();
+
+            command.isExecuting().should.not.be.ok;
+        });
+
         it("should execute callback with given context as this", () => {
             var executeSpy = sinon.spy(),
                 commandContext = commonHelpers.createNote();
