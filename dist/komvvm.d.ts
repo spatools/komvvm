@@ -26,15 +26,22 @@ interface KnockoutBindingHandlers {
 }
 
 declare module "koutils/commands" {
+export type Thenable = {
+    then: (resolve: Function, reject: Function) => void;
+};
+export type AsyncExecuteCallback = ($data: any, complete?: () => void) => any;
+export type AsyncThenableCallback = ($data?: any) => Thenable;
+export type AsyncCommandCallback = AsyncExecuteCallback | AsyncThenableCallback;
 export interface CommandOptions {
     execute($data: any): any;
     canExecute?(): boolean;
     context?: any;
 }
 export interface AsyncCommandOptions {
-    execute($data: any, complete: () => void): any;
+    execute: AsyncCommandCallback;
     canExecute?(isExecuting: boolean): boolean;
     context?: any;
+    usePromise?: boolean;
 }
 export class Command {
     private canExecuteCallback;
@@ -48,6 +55,7 @@ export class AsyncCommand {
     private canExecuteCallback;
     private executeCallback;
     private context;
+    private usePromise;
     isExecuting: KnockoutObservable<boolean>;
     canExecute: KnockoutComputed<boolean>;
     constructor(options: AsyncCommandOptions);

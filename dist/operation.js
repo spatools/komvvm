@@ -1,9 +1,15 @@
-define(["require", "exports", "knockout", "./messenger", "koutils/utils"], function (require, exports, ko, messenger, utils) {
+define(["require", "exports", "knockout", "./messenger"], function (require, exports, ko, messenger) {
+    function isFunction(fn) {
+        return typeof fn === "function";
+    }
+    function isNullOrWhiteSpace(value) {
+        return !value || (/^\s*$/).test(value);
+    }
     /** Create an async operation which result can be cached and progress can be tracked */
     function Operation(options) {
-        var cache = options.cache || false, cacheDuration = options.cacheDuration || 60 * 5, useArgs = options.useArguments || false, message = options.message || null, lastExecution = null, memory = null, isExecuting = ko.observable(false), progress = ko.observable(0), progressDetails = ko.observable({}), error = ko.observable(""), errorDetails = ko.observable({}), hasError = ko.computed(function () { return utils.isNullOrWhiteSpace(error()); }), onComplete = function () {
+        var cache = options.cache || false, cacheDuration = options.cacheDuration || 60 * 5, useArgs = options.useArguments || false, message = options.message || null, lastExecution = null, memory = null, isExecuting = ko.observable(false), progress = ko.observable(0), progressDetails = ko.observable({}), error = ko.observable(""), errorDetails = ko.observable({}), hasError = ko.pureComputed(function () { return !isNullOrWhiteSpace(error()); }), onComplete = function () {
             var args = Array.prototype.slice.call(arguments, 0);
-            if (utils.is(options.complete, "function"))
+            if (isFunction(options.complete))
                 options.complete.apply(this, args);
             if (message)
                 messenger.publish(message + "Response", args);
@@ -17,13 +23,13 @@ define(["require", "exports", "knockout", "./messenger", "koutils/utils"], funct
             progress(0);
             progressDetails({});
         }, onError = function (_error, _errorDetails) {
-            if (utils.is(options.error, "function"))
+            if (isFunction(options.error))
                 options.error.apply(this, arguments);
             error(_error);
             errorDetails(_errorDetails);
             isExecuting(false);
         }, onProgress = function (_progress, _progressDetails) {
-            if (utils.is(options.progress, "function"))
+            if (isFunction(options.progress))
                 options.progress.apply(this, arguments);
             progress(_progress);
             progressDetails(_progressDetails);
@@ -41,7 +47,7 @@ define(["require", "exports", "knockout", "./messenger", "koutils/utils"], funct
             }
             if (useArgs)
                 args.unshift(Array.prototype.slice.call(arguments, 0));
-            if (utils.is(options.execute, "function")) {
+            if (isFunction(options.execute)) {
                 options.execute.apply(this, args);
             }
         };
@@ -75,10 +81,10 @@ define(["require", "exports", "knockout", "./messenger", "koutils/utils"], funct
                 if (value.operation)
                     operations.push(ko.unwrap(value.operation));
             }
-            if (utils.isNullOrUndefined(isVisible)) {
+            if (typeof isVisible === "undefined" || isVisible === null) {
                 isVisible = operations.some(function (op) { return op.isExecuting(); });
             }
-            ko.bindingHandlers.visible.update(element, utils.createAccessor(isVisible), allBindingsAccessor, viewModel, bindingContext);
+            ko.bindingHandlers.visible.update(element, function () { return isVisible; }, allBindingsAccessor, viewModel, bindingContext);
         }
     };
     return Operation;

@@ -1,4 +1,4 @@
-define(["require", "exports", "knockout", "koutils/utils"], function (require, exports, ko, utils) {
+define(["require", "exports", "knockout"], function (require, exports, ko) {
     var Command = (function () {
         function Command(options) {
             this.canExecuteCallback = options.canExecute;
@@ -21,6 +21,7 @@ define(["require", "exports", "knockout", "koutils/utils"], function (require, e
             this.canExecuteCallback = options.canExecute;
             this.executeCallback = options.execute;
             this.context = options.context;
+            this.usePromise = options.usePromise || false;
             this.canExecute = ko.computed(function () {
                 return this.canExecuteCallback ? this.canExecuteCallback.call(this.context, this.isExecuting()) : true;
             }, this);
@@ -30,21 +31,30 @@ define(["require", "exports", "knockout", "koutils/utils"], function (require, e
         };
         AsyncCommand.prototype.execute = function ($data) {
             if (this.canExecute() === true) {
-                var args = [];
-                if (this.executeCallback.length === 2)
+                var args = [], complete = this.completeCallback.bind(this), result;
+                if (this.executeCallback.length === 2 || this.usePromise)
                     args.push($data);
-                args.push(this.completeCallback.bind(this));
+                if (!this.usePromise)
+                    args.push(complete);
                 this.isExecuting(true);
-                this.executeCallback.apply(this.context, args);
+                result = this.executeCallback.apply(this.context, args);
+                if (result && result.then)
+                    result.then(complete, complete);
             }
         };
         return AsyncCommand;
     })();
     exports.AsyncCommand = AsyncCommand;
+    function createAccessor(val) {
+        return function () { return val; };
+    }
     ko.bindingHandlers.command = {
         init: function (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
             var value = valueAccessor(), commands = !!value.execute ? { click: value } : value, events = {}, bindings = {}, hasEvent = false, event, command, binding, bindingValue;
             for (event in commands) {
+                if (event === "default") {
+                    continue;
+                }
                 if ((command = commands[event])) {
                     if (ko.bindingHandlers[event]) {
                         bindings[event] = command.execute.bind(command);
@@ -57,11 +67,11 @@ define(["require", "exports", "knockout", "koutils/utils"], function (require, e
             }
             for (binding in bindings) {
                 if ((bindingValue = bindings[binding])) {
-                    ko.bindingHandlers[binding].init(element, utils.createAccessor(bindingValue), allBindingsAccessor, viewModel, bindingContext);
+                    ko.bindingHandlers[binding].init(element, createAccessor(bindingValue), allBindingsAccessor, viewModel, bindingContext);
                 }
             }
             if (hasEvent) {
-                ko.bindingHandlers.event.init(element, utils.createAccessor(events), allBindingsAccessor, viewModel, bindingContext);
+                ko.bindingHandlers.event.init(element, createAccessor(events), allBindingsAccessor, viewModel, bindingContext);
             }
         },
         update: function (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
@@ -69,7 +79,10 @@ define(["require", "exports", "knockout", "koutils/utils"], function (require, e
             if (commands.click) {
                 result = commands.click.canExecute();
             }
-            ko.bindingHandlers.enable.update(element, utils.createAccessor(result), allBindingsAccessor, viewModel, bindingContext);
+            else if (commands.default) {
+                result = commands.default.canExecute();
+            }
+            ko.bindingHandlers.enable.update(element, createAccessor(result), allBindingsAccessor, viewModel, bindingContext);
         }
     };
 });
