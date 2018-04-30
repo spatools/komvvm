@@ -7,6 +7,7 @@ require.config({
     baseUrl: "/base",
 
     paths: {
+        "es6-promise": "node_modules/es6-promise/dist/es6-promise.auto",
         "knockout": "node_modules/knockout/build/output/knockout-latest.debug",
         "should": "node_modules/should/should",
         "sinon": "node_modules/sinon/pkg/sinon"

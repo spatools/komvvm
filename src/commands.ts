@@ -31,8 +31,9 @@ export class Command {
     }
 
     public execute($data?: any): void {
-        if (this.canExecute() === true)
+        if (this.canExecute() === true) {
             this.executeCallback.call(this.context, $data);
+        }
     }
 }
 
@@ -69,9 +70,9 @@ export class AsyncCommand {
 
     public execute($data?: any): void {
         if (this.canExecute() === true) {
-            var args = [],
-                complete = this.completeCallback.bind(this),
-                result: Thenable;
+            const
+                args = [],
+                complete = this.completeCallback.bind(this);
 
             if (this.executeCallback.length === 2 || this.usePromise)
                 args.push($data);
@@ -81,13 +82,68 @@ export class AsyncCommand {
 
             this.isExecuting(true);
 
-            result = this.executeCallback.apply(this.context, args);
-            if (isThenable(result)) result.then(complete, complete);
+            try {
+                const result = this.executeCallback.apply(this.context, args);
+                if (isThenable(result)) result.then(complete, complete);
+            }
+            catch (err) {
+                complete();
+            }
         }
     }
 }
 
-export type BindingHandlerOptions = Command | AsyncCommand | { [key: string]: Command | AsyncCommand };
+export interface PromiseCommandOptions {
+    execute: AsyncThenableCallback;
+    canExecute?(isExecuting: boolean): boolean;
+    context?: any;
+}
+
+export class PromiseCommand {
+    private canExecuteCallback?: (isExecuting: boolean) => boolean;
+    private executeCallback: AsyncThenableCallback;
+    private context: any;
+
+    public isExecuting: ko.Observable<boolean> = ko.observable(false);
+    public canExecute: ko.Computed<boolean>;
+
+    constructor(options: AsyncCommandOptions) {
+        this.canExecuteCallback = options.canExecute;
+        this.executeCallback = options.execute;
+        this.context = options.context;
+
+        this.canExecute = ko.computed<boolean>(function () {
+            return this.canExecuteCallback ? this.canExecuteCallback.call(this.context, this.isExecuting()) : true;
+        }, this);
+    }
+
+    private completeCallback(): void {
+        this.isExecuting(false);
+    }
+
+    public execute($data?: any): void {
+        if (this.canExecute() === true) {
+            const complete = this.completeCallback.bind(this);
+
+            this.isExecuting(true);
+
+            try {
+                const result = this.executeCallback.call(this.context, $data);
+                if (isThenable(result)) {
+                    result.then(complete, complete);
+                }
+                else {
+                    complete();
+                }
+            }
+            catch (err) {
+                complete();
+            }
+        }
+    }
+}
+
+export type BindingHandlerOptions = Command | AsyncCommand | PromiseCommand | { [key: string]: Command | AsyncCommand | PromiseCommand };
 
 declare module "knockout" {
     export interface BindingHandlers {
@@ -156,7 +212,7 @@ bindingHandlers.command = {
     }
 };
 
-function createCommands(value: BindingHandlerOptions): { [key: string]: Command | AsyncCommand } {
+function createCommands(value: BindingHandlerOptions): { [key: string]: Command | AsyncCommand | PromiseCommand } {
     return isCommand(value) ? { click: value } : value
 }
 
@@ -164,7 +220,7 @@ function createAccessor(val: any): () => any {
     return () => val;
 }
 
-function isCommand(val: any): val is Command | AsyncCommand {
+function isCommand(val: any): val is Command | AsyncCommand | PromiseCommand {
     return val && typeof val.execute === "function";
 }
 
