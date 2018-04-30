@@ -27,13 +27,15 @@
       AMD
     </tags>
     <dependencies>
-      <dependency id="KoUtils" version="0.1.3" />
+      <dependency id="Knockout" version="3.4.0" />
     </dependencies>
   </metadata>
   <files>
     <file src="..\dist\commands.js" target="Content\Scripts\komvvm" />
+    <file src="..\dist\commands.d.ts" target="Content\Scripts\komvvm" />
     <file src="..\dist\messenger.js" target="Content\Scripts\komvvm" />
+    <file src="..\dist\messenger.d.ts" target="Content\Scripts\komvvm" />
     <file src="..\dist\operation.js" target="Content\Scripts\komvvm" />
-    <file src="..\dist\komvvm.d.ts" target="Content\Scripts\komvvm" />
+    <file src="..\dist\operation.d.ts" target="Content\Scripts\komvvm" />
   </files>
 </package>
