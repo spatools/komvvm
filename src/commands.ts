@@ -1,9 +1,11 @@
-import ko = require("knockout");
+import * as ko from "knockout";
 
-export type Thenable = { then: (resolve: Function, reject: Function) => void; };
+export type Thenable<T = any> = PromiseLike<T> | { then: (resolve: Function, reject: Function) => void; };
 export type AsyncExecuteCallback = ($data: any, complete?: () => void) => any;
 export type AsyncThenableCallback = ($data?: any) => Thenable;
 export type AsyncCommandCallback = AsyncExecuteCallback | AsyncThenableCallback;
+
+const bindingHandlers = ko.bindingHandlers;
 
 export interface CommandOptions {
     execute($data: any): any;
@@ -11,19 +13,12 @@ export interface CommandOptions {
     context?: any;
 }
 
-export interface AsyncCommandOptions {
-    execute: AsyncCommandCallback;
-    canExecute?(isExecuting: boolean): boolean;
-    context?: any;
-    usePromise?: boolean;
-}
-
 export class Command {
-    private canExecuteCallback: () => boolean;
+    private canExecuteCallback?: () => boolean;
     private executeCallback: ($data: any) => any;
     private context: any;
 
-    public canExecute: KnockoutComputed<boolean>;
+    public canExecute: ko.Computed<boolean>;
 
     constructor(options: CommandOptions) {
         this.canExecuteCallback = options.canExecute;
@@ -41,14 +36,21 @@ export class Command {
     }
 }
 
+export interface AsyncCommandOptions {
+    execute: AsyncCommandCallback;
+    canExecute?(isExecuting: boolean): boolean;
+    context?: any;
+    usePromise?: boolean;
+}
+
 export class AsyncCommand {
-    private canExecuteCallback: (isExecuting: boolean) => boolean;
+    private canExecuteCallback?: (isExecuting: boolean) => boolean;
     private executeCallback: AsyncCommandCallback;
     private context: any;
     private usePromise: boolean;
 
-    public isExecuting: KnockoutObservable<boolean> = ko.observable(false);
-    public canExecute: KnockoutComputed<boolean>;
+    public isExecuting: ko.Observable<boolean> = ko.observable(false);
+    public canExecute: ko.Computed<boolean>;
 
     constructor(options: AsyncCommandOptions) {
         this.canExecuteCallback = options.canExecute;
@@ -80,32 +82,40 @@ export class AsyncCommand {
             this.isExecuting(true);
 
             result = this.executeCallback.apply(this.context, args);
-            if (result && result.then) result.then(complete, complete);
+            if (isThenable(result)) result.then(complete, complete);
         }
     }
 }
 
-function createAccessor(val: any): () => any {
-    return () => val;
+export type BindingHandlerOptions = Command | AsyncCommand | { [key: string]: Command | AsyncCommand };
+
+declare module "knockout" {
+    export interface BindingHandlers {
+        command: {
+            init(element: HTMLElement, valueAccessor: () => BindingHandlerOptions, allBindingsAccessor: any, viewModel: any, bindingContext: BindingContext): void | BindingHandlerControlsDescendant;
+            update(element: HTMLElement, valueAccessor: () => BindingHandlerOptions): void;
+        }
+    }
 }
 
-(<any>ko.bindingHandlers).command = {
-    init: function (element: HTMLElement, valueAccessor: () => any, allBindingsAccessor: KnockoutAllBindingsAccessor, viewModel: any, bindingContext: KnockoutBindingContext) {
-        var value = valueAccessor(),
-            commands = !!value.execute ? { click: value } : value,
-            events = {},
-            bindings: any = {},
-            hasEvent = false,
-            event: string, command: Command,
-            binding: string, bindingValue: any;
+bindingHandlers.command = {
+    init(element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
+        const
+            commands = createCommands(valueAccessor()),
 
-        for (event in commands) {
+            events = {} as { [key: string]: Function },
+            bindings = {} as { [key: string]: Function };
+
+        let hasEvent = false;
+
+        Object.keys(commands).forEach(event => {
             if (event === "default") {
-                continue;
+                return;
             }
 
-            if ((command = commands[event])) {
-                if (ko.bindingHandlers[event]) {
+            const command = commands[event];
+            if (isCommand(command)) {
+                if (bindingHandlers[event]) {
                     bindings[event] = command.execute.bind(command);
                 }
                 else {
@@ -113,30 +123,51 @@ function createAccessor(val: any): () => any {
                     hasEvent = true;
                 }
             }
-        }
+        });
 
-        for (binding in bindings) {
-            if ((bindingValue = bindings[binding])) {
-                ko.bindingHandlers[binding].init(element, createAccessor(bindingValue), allBindingsAccessor, viewModel, bindingContext);
+        Object.keys(bindings).forEach(binding => {
+            const bindingHandler = bindingHandlers[binding];
+            if (bindingHandler && bindingHandler.init) {
+                bindingHandler.init(element, createAccessor(bindings[binding]), allBindingsAccessor, viewModel, bindingContext);
             }
-        }
+        });
 
         if (hasEvent) {
-            ko.bindingHandlers.event.init(element, createAccessor(events), allBindingsAccessor, viewModel, bindingContext);
+            bindingHandlers.event.init(element, createAccessor(events), allBindingsAccessor, viewModel, bindingContext);
         }
     },
-    update: function (element: HTMLElement, valueAccessor: () => any, allBindingsAccessor: KnockoutAllBindingsAccessor, viewModel: any, bindingContext: KnockoutBindingContext) {
-        var value = valueAccessor(),
-            commands = !!value.execute ? { click: value } : value,
-            result = true;
+    update(element, valueAccessor) {
+        const
+            commands = createCommands(valueAccessor());
 
-        if (commands.click) {
-            result = commands.click.canExecute();
-        }
-        else if (commands.default) {
-            result = commands.default.canExecute();
-        }
+        bindingHandlers.enable.update(element, enableAccessor);
 
-        ko.bindingHandlers.enable.update(element, createAccessor(result), allBindingsAccessor, viewModel, bindingContext);
+        function enableAccessor() {
+            if (commands.click) {
+                return commands.click.canExecute();
+            }
+
+            if (commands.default) {
+                return commands.default.canExecute();
+            }
+
+            return true;
+        }
     }
 };
+
+function createCommands(value: BindingHandlerOptions): { [key: string]: Command | AsyncCommand } {
+    return isCommand(value) ? { click: value } : value
+}
+
+function createAccessor(val: any): () => any {
+    return () => val;
+}
+
+function isCommand(val: any): val is Command | AsyncCommand {
+    return val && typeof val.execute === "function";
+}
+
+function isThenable(val: any): val is PromiseLike<any> {
+    return val && typeof val.then === "function";
+}

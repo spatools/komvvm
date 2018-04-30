@@ -1,24 +1,16 @@
-import ko = require("knockout");
-import messenger = require("./messenger");
+import * as ko from "knockout";
 
-function isFunction(fn: any): boolean {
-    return typeof fn === "function";
-}
+import * as messenger from "./messenger";
 
-function isNullOrWhiteSpace(value: string): boolean {
-    return !value || (/^\s*$/).test(value);
-}
+const unwrap = ko.unwrap;
 
 /** Create an async operation which result can be cached and progress can be tracked */
-function Operation(options: OperationOptions): OperationFunction {
-    var
+function Operation(options: Operation.OperationOptions): Operation.OperationFunction {
+    const
         cache = options.cache || false,
         cacheDuration = options.cacheDuration || 60 * 5,
         useArgs = options.useArguments || false,
         message = options.message || null,
-
-        lastExecution = null,
-        memory = null,
 
         isExecuting = ko.observable(false),
         progress = ko.observable(0),
@@ -26,108 +18,175 @@ function Operation(options: OperationOptions): OperationFunction {
         error = ko.observable(""),
         errorDetails = ko.observable({}),
 
-        hasError = ko.pureComputed(() => !isNullOrWhiteSpace(error())),
+        hasError = ko.pureComputed(() => !isNullOrWhiteSpace(error()));
 
-        onComplete = function () {
-            var args = Array.prototype.slice.call(arguments, 0);
+    let
+        lastExecution: number | null = null,
+        memory: any[] | null = null;
 
-            if (isFunction(options.complete))
-                options.complete.apply(this, args);
+    const self = execute as any as Operation.OperationFunction;
 
-            if (message)
-                messenger.publish(message + "Response", args);
+    self.isExecuting = isExecuting;
+    self.progress = progress;
+    self.progressDetails = progressDetails;
+    self.error = error;
+    self.errorDetails = errorDetails;
+    self.hasError = hasError;
 
-            if (cache === true && !lastExecution) {
-                memory = args;
-                lastExecution = Date.now();
+    if (message) {
+        messenger.subscribe(message + "Request", self.bind(self));
+    }
+
+    return self;
+
+    function execute(this: Operation.OperationFunction) {
+        const args = [onComplete, onError, onProgress];
+        progress(-1);
+        isExecuting(true);
+
+        if (cache === true && !!lastExecution) {
+            if (lastExecution + cacheDuration < Date.now()) {
+                return onComplete.apply(this, memory);
+            } else {
+                lastExecution = memory = null;
             }
+        }
 
-            isExecuting(false);
-            error(""); errorDetails({});
-            progress(0); progressDetails({});
-        },
-        onError = function (_error, _errorDetails) {
-            if (isFunction(options.error))
-                options.error.apply(this, arguments);
+        if (useArgs)
+            args.unshift(Array.prototype.slice.call(arguments, 0));
 
-            error(_error);
-            errorDetails(_errorDetails);
-            isExecuting(false);
-        },
-        onProgress = function (_progress, _progressDetails) {
-            if (isFunction(options.progress))
-                options.progress.apply(this, arguments);
+        if (isFunction(options.execute)) {
+            options.execute.apply(this, args);
+        }
+    }
 
-            progress(_progress);
-            progressDetails(_progressDetails);
-        },
+    function onComplete(this: Operation.OperationFunction): void {
+        const args = Array.prototype.slice.call(arguments, 0);
 
-        execute: any = function () {
-            var args = [onComplete, onError, onProgress];
-            progress(-1);
-            isExecuting(true);
+        if (isFunction(options.complete))
+            options.complete.apply(this, args);
 
-            if (cache === true && !!lastExecution) {
-                if (lastExecution + cacheDuration < Date.now()) {
-                    return onComplete.apply(null, memory);
-                } else {
-                    lastExecution = memory = null;
-                }
-            }
+        if (message)
+            messenger.publish(message + "Response", args);
 
-            if (useArgs)
-                args.unshift(Array.prototype.slice.call(arguments, 0));
+        if (cache === true && !lastExecution) {
+            memory = args;
+            lastExecution = Date.now();
+        }
 
-            if (isFunction(options.execute)) {
-                options.execute.apply(this, args);
-            }
-        };
+        isExecuting(false);
+        error(""); errorDetails({});
+        progress(0); progressDetails({});
+    }
 
-    if (message)
-        messenger.subscribe(message + "Request", execute);
+    function onError(this: Operation.OperationFunction, err: string, errDetails: any): void {
+        if (isFunction(options.error)) {
+            options.error.apply(this, arguments);
+        }
 
-    execute.isExecuting = isExecuting;
-    execute.progress = progress;
-    execute.progressDetails = progressDetails;
-    execute.error = error;
-    execute.errorDetails = errorDetails;
-    execute.hasError = hasError;
+        error(err);
+        errorDetails(errDetails);
+        isExecuting(false);
+    }
 
-    return execute;
+    function onProgress(this: Operation.OperationFunction, progr: number, pogrDetails: any): void {
+        if (isFunction(options.progress))
+            options.progress.apply(this, arguments);
+
+        progress(progr);
+        progressDetails(progressDetails);
+    }
+}
+
+namespace Operation {
+    export interface OperationOptions {
+        useArguments?: boolean;
+        cache?: boolean;
+        cacheDuration?: number;
+        message?: string;
+
+        execute: () => any;
+        complete: () => any;
+        error: () => any;
+        progress: () => any;
+    }
+
+    export interface OperationFunction extends Function {
+        isExecuting: ko.Observable<boolean>;
+        progress: ko.Observable<number>;
+        progressDetails: ko.Observable<any>;
+        error: ko.Observable<string>;
+        errorDetails: ko.Observable<any>;
+        hasError: ko.PureComputed<boolean>;
+    }
+
+    export type BindingHandlerOptions = ko.MaybeSubscribable<boolean | OperationFunction[] | BindingHandlerObjectOptions>;
+
+    export interface BindingHandlerObjectOptions {
+        template?: ko.MaybeSubscribable<string | Node | null | undefined>;
+        isVisible?: ko.MaybeSubscribable<boolean | null | undefined>;
+        operations?: ko.MaybeSubscribable<OperationFunction[] | null | undefined>;
+        operation?: ko.MaybeSubscribable<OperationFunction | null | undefined>;
+    }
+
+}
+
+declare module "knockout" {
+    export interface BindingHandlers {
+        loader: {
+            init(element: HTMLElement, valueAccessor: () => Operation.BindingHandlerOptions, allBindingsAccessor: any, viewModel: any, bindingContext: BindingContext): void | BindingHandlerControlsDescendant;
+            update(element: HTMLElement, valueAccessor: () => Operation.BindingHandlerOptions): void;
+        }
+    }
 }
 
 ko.bindingHandlers.loader = {
-    init: function (element: HTMLElement, valueAccessor: () => any, allBindingsAccessor: () => any, viewModel: any, bindingContext: KnockoutBindingContext) {
-        var value = ko.unwrap(valueAccessor()),
-            template = ko.unwrap(value.template);
+    init(element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
+        const
+            value = unwrap(valueAccessor()) as any,
+            template = unwrap(value.template);
 
         if (template) {
             ko.renderTemplate(template, bindingContext, {}, element);
             return { controlsDescendantBindings: true };
         }
     },
-    update: function (element: HTMLElement, valueAccessor: () => any, allBindingsAccessor: KnockoutAllBindingsAccessor, viewModel: any, bindingContext: KnockoutBindingContext) {
-        var value = ko.unwrap(valueAccessor()),
-            valueType = typeof value,
-            operations: Array<OperationFunction>, isVisible: boolean;
+    update(element, valueAccessor) {
+        const
+            value = unwrap(valueAccessor()),
+            valueType = typeof value;
 
-        if (valueType === "boolean")
+        let operations = [] as Operation.OperationFunction[],
+            isVisible: boolean | null | undefined;
+
+        if (typeof value === "boolean") {
             isVisible = value;
-        else if (valueType === "array")
+        }
+        else if (Array.isArray(value)) {
             operations = value;
+        }
         else {
-            isVisible = ko.unwrap(value.isVisible);
-            operations = value.operations ? ko.unwrap(value.operations) : [];
-            if (value.operation)
-                operations.push(ko.unwrap(value.operation));
+            isVisible = unwrap(value.isVisible);
+            operations = unwrap(value.operations) || [];
+
+            let op = unwrap(value.operation);
+            op && operations.push(op);
         }
 
         if (typeof isVisible === "undefined" || isVisible === null) {
             isVisible = operations.some(op => op.isExecuting());
         }
 
-        ko.bindingHandlers.visible.update(element, () => isVisible, allBindingsAccessor, viewModel, bindingContext);
+        ko.bindingHandlers.visible.update(element, () => isVisible);
     }
 };
 
 export = Operation;
+
+function isFunction(fn: any): fn is Function {
+    return typeof fn === "function";
+}
+
+function isNullOrWhiteSpace(value: string): boolean {
+    return !value || (/^\s*$/).test(value);
+}

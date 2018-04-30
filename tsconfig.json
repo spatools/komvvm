@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+        "target": "es5",
+        "module": "umd",
+        "moduleResolution": "node",
+        "sourceMap": false,
+        "strict": true
+    },
+    "exclude": [
+        "test",
+        "node_modules",
+        "nuget",
+        "dist"
+    ]
+}

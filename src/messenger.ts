@@ -1,4 +1,6 @@
-var priority: number = 1,
+const
+    PRIORITY = 1,
+
     subscriptions: { [key: string]: Subscription[] } = {};
 
 interface Subscription {
@@ -24,11 +26,13 @@ export function publish(topic: string, ...args: any[]): boolean {
         return true;
     }
 
-    var subs = subscriptions[topic],
+    const
+        subs = subscriptions[topic],
         _subscriptions = subs.sort(sortFunction),
-        result = true,
+        len = subs.length;
 
-        i = 0, len = subs.length,
+    let i = 0,
+        result = true,
         sub: Subscription;
 
     for (; i < len; i++) {
@@ -57,18 +61,15 @@ export function publish(topic: string, ...args: any[]): boolean {
 }
 
 /** Publish message with specified options in the given topic */
-export function subscribe(topic: string, callback: Function, options?: SubscribeOptions): void {
+export function subscribe(topic: string, callback: Function, options: SubscribeOptions = {}): void {
     if (!topic || !callback) {
         throw new Error("missing topic or callback argument");
     }
 
-    if (!options) {
-        options = {};
-    }
-
-    if (typeof options.priority === "undefined") {
-        options.priority = priority;
-    }
+    const priority =
+        typeof options.priority === "number" ?
+            options.priority :
+            PRIORITY;
 
     topic.split(/\s/g).forEach(t => {
         if (!subscriptions[t]) {
@@ -78,20 +79,17 @@ export function subscribe(topic: string, callback: Function, options?: Subscribe
         subscriptions[t].push({
             callback: callback,
             context: options.context,
-            priority: options.priority,
+            priority: priority,
             once: options.once
         });
     });
 }
 
 /** Subscribe for the next iteration of the specified topic with given callback and options */
-export function subscribeNext(topic: string, callback: Function, options?: SubscribeOptions): void {
-    if (!options) {
-        options = {};
-    }
+export function subscribeNext(topic: string, callback: Function, options: SubscribeOptions = {}): void {
     options.once = true;
 
-    this.subscribe(topic, callback, options);
+    subscribe(topic, callback, options);
 }
 
 /** Publish message with specified options in the given topic */
@@ -100,10 +98,11 @@ export function unsubscribe(topic: string, callback: Function): void {
         return;
     }
 
-    var subs = subscriptions[topic],
-        i = 0, len = subs.length,
-        sub: Subscription;
+    const
+        subs = subscriptions[topic],
+        len = subs.length;
 
+    let i = 0, sub: Subscription;
     for (; i < len; i++) {
         sub = subs[i];
 

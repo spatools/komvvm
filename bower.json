@@ -1,6 +1,6 @@
 {
   "name": "komvvm",
-  "version": "0.1.4",
+  "version": "1.0.0",
   "authors": [
     "SPA Tools"
   ],
@@ -28,13 +28,7 @@
     "nuget",
     "test"
   ],
-  "devDependencies": {
-    "mocha": "~1.17.1",
-    "should": "3.1.2",
-    "sinon": "http://sinonjs.org/releases/sinon-1.8.1.js"
-  },
   "dependencies": {
-    "knockoutjs": "^3.3.0",
-    "requirejs": "^2.1.20"
+    "knockoutjs": "^3.4.0"
   }
 }

@@ -1,14 +1,16 @@
 {
   "name": "komvvm",
-  "version": "0.1.4",
+  "version": "1.0.0",
   "description": "Knockout MVVM Extensions to help Knockout app development",
-  "main": "dist/komvvm.js",
-  "scripts": {
-    "test": "grunt"
-  },
+  "author": "SPA Tools",
+  "license": "MIT",
+  "main": "index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/spatools/komvvm.git"
+  },
+  "bugs": {
+    "url": "https://github.com/spatools/komvvm/issues"
   },
   "keywords": [
     "knockout",
@@ -20,27 +22,48 @@
     "operation",
     "command",
     "spatools",
-    "amd"
+    "umd",
+    "amd",
+    "commonjs"
   ],
-  "devDependencies": {
-    "grunt": "0.4.5",
-    "grunt-contrib-clean": "^0.6.0",
-    "grunt-contrib-concat": "^0.5.1",
-    "grunt-contrib-connect": "^0.11.2",
-    "grunt-contrib-jshint": "^0.11.3",
-    "grunt-contrib-watch": "^0.6.1",
-    "grunt-mocha": "^0.4.13",
-    "grunt-nuget": "^0.1.4",
-    "grunt-typescript": "^0.7.0",
-    "grunt-tsdamdconcat": "^0.1.1",
-    "grunt-tslint": "^2.5.0",
-    "time-grunt": "^1.2.1",
-    "jit-grunt": "^0.9.1",
-    "typescript": "~1.5.3"
+  "scripts": {
+    "test": "grunt"
   },
-  "author": "SPA Tools",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/spatools/komvvm/issues"
+  "dependencies": {
+    "knockout": "^3.5.0-rc"
+  },
+  "devDependencies": {
+    "@types/mocha": "^5.2.0",
+    "@types/requirejs": "^2.1.31",
+    "@types/sinon": "^4.3.1",
+    "grunt": "^1.0.2",
+    "grunt-build-control": "^0.7.1",
+    "grunt-contrib-clean": "^1.1.0",
+    "grunt-contrib-watch": "^1.0.1",
+    "grunt-karma": "^2.0.0",
+    "grunt-newer": "^1.3.0",
+    "grunt-nuget": "^0.3.0",
+    "grunt-ts": "^6.0.0-beta.19",
+    "grunt-tslint": "^5.0.2",
+    "jit-grunt": "^0.10.0",
+    "karma": "^2.0.2",
+    "karma-mocha": "^1.3.0",
+    "karma-mocha-reporter": "^2.2.5",
+    "karma-phantomjs-launcher": "^1.0.4",
+    "karma-requirejs": "^1.1.0",
+    "mocha": "^5.1.1",
+    "phantomjs-prebuilt": "^2.1.16",
+    "requirejs": "^2.3.5",
+    "should": "^13.2.1",
+    "sinon": "^4.5.0",
+    "time-grunt": "^1.4.0",
+    "tslint": "^5.9.1",
+    "typescript": "^2.8.3"
+  },
+  "optionalDependencies": {
+    "karma-chrome-launcher": "^2.2.0",
+    "karma-firefox-launcher": "^1.1.0",
+    "karma-ie-launcher": "^1.0.0",
+    "karma-opera-launcher": "^1.0.0"
   }
 }
