@@ -1,7 +1,7 @@
 import * as ko from "knockout";
 
 export type Thenable<T = any> = PromiseLike<T> | { then: (resolve: Function, reject: Function) => void; };
-export type AsyncExecuteCallback = ($data: any, complete?: () => void) => any;
+export type AsyncExecuteCallback = ((complete?: () => void) => any) | (($data: any, complete?: () => void) => any);
 export type AsyncThenableCallback = ($data?: any) => Thenable;
 export type AsyncCommandCallback = AsyncExecuteCallback | AsyncThenableCallback;
 

@@ -1,25 +1,23 @@
-﻿//// <reference path="../_definitions.d.ts" />
-/// <reference path="../typings/mocha/mocha.d.ts" />
-/// <reference path="../typings/should/should.d.ts" />
-/// <reference path="../typings/sinon/sinon.d.ts" />
+﻿import "should";
+import * as sinon from "sinon";
+import * as commonHelpers from "./helpers/common";
 
-import ko = require("knockout");
-import commands = require("../src/commands");
-import commonHelpers = require("./helpers/common");
+import * as ko from "knockout";
+import * as commands from "../src/commands";
 
 describe("Command", () => {
 
     describe("canExecute", () => {
 
         it("should be equal to result of given function", () => {
-            var _canExecute = ko.observable(false);
+            const _canExecute = ko.observable(false);
 
-            var command = new commands.Command({
+            const command = new commands.Command({
                 canExecute: () => _canExecute(),
                 execute: commonHelpers.noop
             });
 
-            var canExecuteResult = command.canExecute();
+            let canExecuteResult = command.canExecute();
             canExecuteResult.should.not.be.ok;
 
             _canExecute(true);
@@ -33,9 +31,9 @@ describe("Command", () => {
     describe("execute", () => {
 
         it("should block execution if canExecute is false", () => {
-            var executeSpy = sinon.spy();
+            const executeSpy = sinon.spy();
 
-            var command = new commands.Command({
+            const command = new commands.Command({
                 canExecute: () => false,
                 execute: executeSpy
             });
@@ -46,9 +44,9 @@ describe("Command", () => {
         });
 
         it("should allow execution if canExecute is true", () => {
-            var executeSpy = sinon.spy();
+            const executeSpy = sinon.spy();
 
-            var command = new commands.Command({
+            const command = new commands.Command({
                 canExecute: () => true,
                 execute: executeSpy
             });
@@ -59,10 +57,10 @@ describe("Command", () => {
         });
 
         it("should execute callback with given arguments", () => {
-            var executeSpy = sinon.spy(),
+            const executeSpy = sinon.spy(),
                 commandParam = commonHelpers.createNote();
 
-            var command = new commands.Command({
+            const command = new commands.Command({
                 canExecute: () => true,
                 execute: executeSpy
             });
@@ -74,10 +72,10 @@ describe("Command", () => {
         });
 
         it("should execute callback with given context as this", () => {
-            var executeSpy = sinon.spy(),
+            const executeSpy = sinon.spy(),
                 commandContext = commonHelpers.createNote();
 
-            var command = new commands.Command({
+            const command = new commands.Command({
                 canExecute: () => true,
                 execute: executeSpy,
                 context: commandContext
@@ -98,14 +96,14 @@ describe("AsyncCommand", () => {
     describe("canExecute", () => {
 
         it("should be equal to result of given function", () => {
-            var _canExecute = ko.observable(false);
+            const _canExecute = ko.observable(false);
 
-            var command = new commands.AsyncCommand({
+            const command = new commands.AsyncCommand({
                 canExecute: isExecuting => !isExecuting && _canExecute(),
                 execute: commonHelpers.noop
             });
 
-            var canExecuteResult = command.canExecute();
+            let canExecuteResult = command.canExecute();
             canExecuteResult.should.not.be.ok;
 
             _canExecute(true);
@@ -115,13 +113,13 @@ describe("AsyncCommand", () => {
         });
 
         it("should set isExecuting to true while executing", () => {
-            var resolver;
-            var command = new commands.AsyncCommand({
+            let resolver: any;
+            const command = new commands.AsyncCommand({
                 canExecute: isExecuting => !isExecuting && true,
-                execute: resolve => { resolver = resolve; }
+                execute: (resolve: () => any) => { resolver = resolve; }
             });
 
-            var canExecuteResult = command.canExecute();
+            let canExecuteResult = command.canExecute();
             canExecuteResult.should.be.ok;
 
             command.execute();
@@ -140,9 +138,9 @@ describe("AsyncCommand", () => {
     describe("execute", () => {
 
         it("should block execution if canExecute is false", () => {
-            var executeSpy = sinon.spy();
+            const executeSpy = sinon.spy();
 
-            var command = new commands.AsyncCommand({
+            const command = new commands.AsyncCommand({
                 canExecute: () => false,
                 execute: executeSpy
             });
@@ -153,9 +151,9 @@ describe("AsyncCommand", () => {
         });
 
         it("should allow execution if canExecute is true", () => {
-            var executeSpy = sinon.spy();
+            const executeSpy = sinon.spy();
 
-            var command = new commands.AsyncCommand({
+            const command = new commands.AsyncCommand({
                 canExecute: () => true,
                 execute: executeSpy
             });
@@ -166,10 +164,10 @@ describe("AsyncCommand", () => {
         });
 
         it("should execute callback with given arguments", () => {
-            var executeSpy = sinon.spy(),
+            const executeSpy = sinon.spy(),
                 commandParam = commonHelpers.createNote();
 
-            var command = new commands.AsyncCommand({
+            const command = new commands.AsyncCommand({
                 canExecute: () => true,
                 execute: (data, resolve) => executeSpy(data, resolve)
             });
@@ -181,11 +179,14 @@ describe("AsyncCommand", () => {
         });
 
         it("should execute execute complete callback automatically if a thenable object is provided", () => {
-            var thenable = { resolve: null, then: function (onResolve) {
-                this.resolve = onResolve;
-            } };
+            const thenable = {
+                resolve: null as Function | null,
+                then: function (this: any, onResolve: Function) {
+                    this.resolve = onResolve;
+                }
+            };
 
-            var command = new commands.AsyncCommand({
+            const command = new commands.AsyncCommand({
                 canExecute: () => true,
                 execute: () => thenable
             });
@@ -194,16 +195,16 @@ describe("AsyncCommand", () => {
 
             command.isExecuting().should.be.ok;
 
-            thenable.resolve();
+            thenable.resolve && thenable.resolve();
 
             command.isExecuting().should.not.be.ok;
         });
 
         it("should execute callback with given context as this", () => {
-            var executeSpy = sinon.spy(),
+            const executeSpy = sinon.spy(),
                 commandContext = commonHelpers.createNote();
 
-            var command = new commands.AsyncCommand({
+            const command = new commands.AsyncCommand({
                 canExecute: () => true,
                 execute: executeSpy,
                 context: commandContext

@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+        "target": "es5",
+        "module": "amd",
+        "moduleResolution": "node",
+        "strict": true,
+        "sourceMap": true
+    },
+    "exclude": [
+        "test",
+        "node_modules",
+        "nuget",
+        "dist"
+    ]
+}

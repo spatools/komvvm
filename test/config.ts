@@ -1,36 +1,20 @@
-﻿/// <reference path="../_definitions.d.ts" />
-/// <reference path="../typings/requirejs/require.d.ts" />
-/// <reference path="../typings/mocha/mocha.d.ts" />
-/// <reference path="../typings/should/should.d.ts" />
-/// <reference path="../typings/sinon/sinon.d.ts" />
+﻿const __karma__ = (<any>window).__karma__;
+const TEST_REGEXP = /(test)\/(.*)\.js$/i;
+const REPLACE_REGEXP = /(^\/base\/)|(\.js$)/g;
 
-requirejs.config({
-    //baseUrl: "../",
+require.config({
+    // Karma serves files under /base, which is the basePath from your config file
+    baseUrl: "/base",
 
     paths: {
-        "knockout": "../bower_components/knockoutjs/dist/knockout.debug",
-        "underscore": "../bower_components/underscore/underscore",
-
-        "mocha": "../bower_components/mocha/mocha",
-        "should": "../bower_components/should/should",
-        "sinon": "../bower_components/sinon/sinon"
+        "knockout": "node_modules/knockout/build/output/knockout-latest.debug",
+        "should": "node_modules/should/should",
+        "sinon": "node_modules/sinon/pkg/sinon"
     },
 
-    shim: {
-        mocha: {
-            exports: "mocha"
-        }
-    }
-});
+    deps: Object.keys(__karma__.files)
+        .filter(file => TEST_REGEXP.test(file) && file.indexOf("config") === -1 && file.indexOf("helpers") === -1)
+        .map(file => file.replace(REPLACE_REGEXP, "")),
 
-(<any>window).console = window.console || function () { return; };
-(<any>window).notrack = true;
-
-var tests = [
-    "commands",
-    "messenger"
-];
-
-require(tests, function () {
-    mocha.run();
+    callback: __karma__.start
 });

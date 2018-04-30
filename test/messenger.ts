@@ -1,32 +1,31 @@
-﻿//// <reference path="../_definitions.d.ts" />
-/// <reference path="../typings/mocha/mocha.d.ts" />
-/// <reference path="../typings/should/should.d.ts" />
-/// <reference path="../typings/sinon/sinon.d.ts" />
+﻿import "should";
+import * as sinon from "sinon";
+import * as commonHelpers from "./helpers/common";
 
-import messenger = require("../src/messenger");
-import commonHelpers = require("./helpers/common");
+import * as ko from "knockout";
+import * as messenger from "../src/messenger";
 
-var topic = "__SPA_TEST_TOPIC__",
-    expectedResult = "dGhpcyBpcyBhIHRlc3QgZm9yIHNwYSB0b29scyBiYXNlNjQgZW5jb2Rlcg==";
+const
+    TOPIC = "__SPA_TEST_TOPIC__";
 
 describe("Messenger", () => {
 
     describe("publish method", () => {
 
         it("should call every subscriptions on given topic", () => {
-            var topic = "__SPA_TEST_TOPIC__",
+            const
                 spy1 = sinon.spy(),
                 spy2 = sinon.spy(),
                 spy3 = sinon.spy();
 
-            messenger.subscribe(topic, spy1);
-            messenger.subscribe(topic, spy2);
+            messenger.subscribe(TOPIC, spy1);
+            messenger.subscribe(TOPIC, spy2);
             messenger.subscribe("blabla", spy3);
 
-            messenger.publish(topic);
+            messenger.publish(TOPIC);
 
-            messenger.unsubscribe(topic, spy1);
-            messenger.unsubscribe(topic, spy2);
+            messenger.unsubscribe(TOPIC, spy1);
+            messenger.unsubscribe(TOPIC, spy2);
             messenger.unsubscribe("blabla", spy3);
 
             sinon.assert.calledOnce(spy1);
@@ -35,18 +34,18 @@ describe("Messenger", () => {
         });
 
         it("should call every subscriptions with given arguments", () => {
-            var topic = "__SPA_TEST_TOPIC__",
+            const
                 arg = commonHelpers.createNote(),
                 spy1 = sinon.spy(),
                 spy2 = sinon.spy();
 
-            messenger.subscribe(topic, spy1);
-            messenger.subscribe(topic, spy2);
+            messenger.subscribe(TOPIC, spy1);
+            messenger.subscribe(TOPIC, spy2);
 
-            messenger.publish(topic, arg, "bla");
+            messenger.publish(TOPIC, arg, "bla");
 
-            messenger.unsubscribe(topic, spy1);
-            messenger.unsubscribe(topic, spy2);
+            messenger.unsubscribe(TOPIC, spy1);
+            messenger.unsubscribe(TOPIC, spy2);
 
             sinon.assert.calledOnce(spy1);
             sinon.assert.calledOnce(spy2);
@@ -56,52 +55,49 @@ describe("Messenger", () => {
         });
 
         it("should return true if no callback return false", () => {
-            var topic = "__SPA_TEST_TOPIC__",
-                result,
+            const
                 spy1 = sinon.spy(),
                 spy2 = sinon.spy();
 
-            messenger.subscribe(topic, spy1);
-            messenger.subscribe(topic, spy2);
+            messenger.subscribe(TOPIC, spy1);
+            messenger.subscribe(TOPIC, spy2);
 
-            result = messenger.publish(topic);
+            const result = messenger.publish(TOPIC);
 
-            messenger.unsubscribe(topic, spy1);
-            messenger.unsubscribe(topic, spy2);
+            messenger.unsubscribe(TOPIC, spy1);
+            messenger.unsubscribe(TOPIC, spy2);
 
             result.should.be.ok;
         });
 
         it("should return false if no callback return false", () => {
-            var topic = "__SPA_TEST_TOPIC__",
-                result,
+            const
                 spy1 = sinon.stub().returns(false),
                 spy2 = sinon.spy();
 
-            messenger.subscribe(topic, spy1);
-            messenger.subscribe(topic, spy2);
+            messenger.subscribe(TOPIC, spy1);
+            messenger.subscribe(TOPIC, spy2);
 
-            result = messenger.publish(topic);
+            const result = messenger.publish(TOPIC);
 
-            messenger.unsubscribe(topic, spy1);
-            messenger.unsubscribe(topic, spy2);
+            messenger.unsubscribe(TOPIC, spy1);
+            messenger.unsubscribe(TOPIC, spy2);
 
             result.should.not.be.ok;
         });
 
         it("should not call any callback after one returns false", () => {
-            var topic = "__SPA_TEST_TOPIC__",
-                result,
+            const
                 spy1 = sinon.stub().returns(false),
                 spy2 = sinon.spy();
 
-            messenger.subscribe(topic, spy1);
-            messenger.subscribe(topic, spy2);
+            messenger.subscribe(TOPIC, spy1);
+            messenger.subscribe(TOPIC, spy2);
 
-            result = messenger.publish(topic);
+            const result = messenger.publish(TOPIC);
 
-            messenger.unsubscribe(topic, spy1);
-            messenger.unsubscribe(topic, spy2);
+            messenger.unsubscribe(TOPIC, spy1);
+            messenger.unsubscribe(TOPIC, spy2);
 
             result.should.not.be.ok;
 
@@ -110,25 +106,24 @@ describe("Messenger", () => {
         });
 
         it("should execute callbacks by priority", () => {
-            var count = 0,
-                topic = "__SPA_TEST_TOPIC__",
-
+            let count = 0;
+            const
                 cb1 = sinon.spy(() => { count.should.equal(0); count++; }),
                 cb2 = sinon.spy(() => { count.should.equal(2); count++; }),
                 cb3 = sinon.spy(() => { count.should.equal(1); count++; }),
                 cb4 = sinon.spy(() => { count.should.equal(3); count++; });
 
-            messenger.subscribe(topic, cb1, { priority: 1 });
-            messenger.subscribe(topic, cb2, { priority: 3 });
-            messenger.subscribe(topic, cb3, { priority: 2 });
-            messenger.subscribe(topic, cb4, { priority: 4 });
+            messenger.subscribe(TOPIC, cb1, { priority: 1 });
+            messenger.subscribe(TOPIC, cb2, { priority: 3 });
+            messenger.subscribe(TOPIC, cb3, { priority: 2 });
+            messenger.subscribe(TOPIC, cb4, { priority: 4 });
 
-            messenger.publish(topic);
+            messenger.publish(TOPIC);
 
-            messenger.unsubscribe(topic, cb1);
-            messenger.unsubscribe(topic, cb2);
-            messenger.unsubscribe(topic, cb3);
-            messenger.unsubscribe(topic, cb4);
+            messenger.unsubscribe(TOPIC, cb1);
+            messenger.unsubscribe(TOPIC, cb2);
+            messenger.unsubscribe(TOPIC, cb3);
+            messenger.unsubscribe(TOPIC, cb4);
 
             sinon.assert.calledOnce(cb1);
             sinon.assert.calledOnce(cb2);
@@ -139,18 +134,18 @@ describe("Messenger", () => {
         });
 
         it("should remove callback if SubscriptionOption.once equal true", () => {
-            var topic = "__SPA_TEST_TOPIC__",
+            const
                 spy1 = sinon.spy(),
                 spy2 = sinon.spy();
 
-            messenger.subscribe(topic, spy1);
-            messenger.subscribe(topic, spy2, { once: true });
+            messenger.subscribe(TOPIC, spy1);
+            messenger.subscribe(TOPIC, spy2, { once: true });
 
-            messenger.publish(topic);
-            messenger.publish(topic);
+            messenger.publish(TOPIC);
+            messenger.publish(TOPIC);
 
-            messenger.unsubscribe(topic, spy1);
-            messenger.unsubscribe(topic, spy2);
+            messenger.unsubscribe(TOPIC, spy1);
+            messenger.unsubscribe(TOPIC, spy2);
 
             sinon.assert.calledTwice(spy1);
             sinon.assert.calledOnce(spy2);
@@ -159,19 +154,16 @@ describe("Messenger", () => {
 
     describe("subscribeNext method", () => {
 
-        it("should call subscribe method with option once set to true", () => {
-            var topic = "__SPA_TEST_TOPIC__",
-                spy = sinon.spy(),
-                stub = sinon.stub(messenger, "subscribe");
+        it("should only be called once", () => {
+            const
+                spy = sinon.spy();
 
-            messenger.subscribeNext(topic, spy);
+            messenger.subscribeNext(TOPIC, spy);
 
-            stub.restore();
+            messenger.publish(TOPIC);
+            messenger.publish(TOPIC);
 
-            sinon.assert.calledOnce(stub);
-            sinon.assert.alwaysCalledWithMatch(stub,
-                sinon.match.same(topic), sinon.match.same(spy), sinon.match.has("once", true)
-            );
+            sinon.assert.calledOnce(spy);
         });
 
     });
@@ -179,32 +171,31 @@ describe("Messenger", () => {
     describe("unsubscribe method", () => {
 
         it("should remove subscription matched by given callback from topic", () => {
-            var topic = "__SPA_TEST_TOPIC__",
-                spy1 = sinon.spy();
+            const spy1 = sinon.spy();
 
-            messenger.subscribe(topic, spy1);
-            messenger.publish(topic);
+            messenger.subscribe(TOPIC, spy1);
+            messenger.publish(TOPIC);
 
-            messenger.unsubscribe(topic, spy1);
+            messenger.unsubscribe(TOPIC, spy1);
 
-            messenger.publish(topic);
+            messenger.publish(TOPIC);
 
             sinon.assert.calledOnce(spy1);
         });
 
         it("should not remove any subscription if nothing matched the given callback", () => {
-            var topic = "__SPA_TEST_TOPIC__",
+            const
                 spy1 = sinon.spy(),
                 spy2 = sinon.spy();
 
-            messenger.subscribe(topic, spy1);
-            messenger.publish(topic);
+            messenger.subscribe(TOPIC, spy1);
+            messenger.publish(TOPIC);
 
-            messenger.unsubscribe(topic, spy2);
+            messenger.unsubscribe(TOPIC, spy2);
 
-            messenger.publish(topic);
+            messenger.publish(TOPIC);
 
-            messenger.unsubscribe(topic, spy1);
+            messenger.unsubscribe(TOPIC, spy1);
 
             sinon.assert.calledTwice(spy1);
         });
