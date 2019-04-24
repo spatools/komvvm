@@ -83,7 +83,7 @@ export class AsyncCommand {
             this.isExecuting(true);
 
             try {
-                const result = this.executeCallback.apply(this.context, args);
+                const result = this.executeCallback.apply(this.context, args as any);
                 if (isThenable(result)) result.then(complete, complete);
             }
             catch (err) {

@@ -40,13 +40,13 @@ function Operation(options: Operation.OperationOptions): Operation.OperationFunc
     return self;
 
     function execute(this: Operation.OperationFunction) {
-        const args = [onComplete, onError, onProgress];
+        const args = [onComplete, onError, onProgress] as any[];
         progress(-1);
         isExecuting(true);
 
         if (cache === true && !!lastExecution) {
             if (lastExecution + cacheDuration < Date.now()) {
-                return onComplete.apply(this, memory);
+                return onComplete.apply(this, memory as any);
             } else {
                 lastExecution = memory = null;
             }
@@ -56,7 +56,7 @@ function Operation(options: Operation.OperationOptions): Operation.OperationFunc
             args.unshift(Array.prototype.slice.call(arguments, 0));
 
         if (isFunction(options.execute)) {
-            options.execute.apply(this, args);
+            options.execute.apply(this, args as any);
         }
     }
 
@@ -64,7 +64,7 @@ function Operation(options: Operation.OperationOptions): Operation.OperationFunc
         const args = Array.prototype.slice.call(arguments, 0);
 
         if (isFunction(options.complete))
-            options.complete.apply(this, args);
+            options.complete.apply(this, args as any);
 
         if (message)
             messenger.publish(message + "Response", args);
@@ -81,7 +81,7 @@ function Operation(options: Operation.OperationOptions): Operation.OperationFunc
 
     function onError(this: Operation.OperationFunction, err: string, errDetails: any): void {
         if (isFunction(options.error)) {
-            options.error.apply(this, arguments);
+            options.error.apply(this, arguments as any);
         }
 
         error(err);
@@ -91,7 +91,7 @@ function Operation(options: Operation.OperationOptions): Operation.OperationFunc
 
     function onProgress(this: Operation.OperationFunction, progr: number, pogrDetails: any): void {
         if (isFunction(options.progress))
-            options.progress.apply(this, arguments);
+            options.progress.apply(this, arguments as any);
 
         progress(progr);
         progressDetails(progressDetails);
