@@ -1,0 +1,32 @@
+{
+  "name": "komvvm",
+  "version": "1.0.0",
+  "description": "Knockout MVVM Extensions to help Knockout app development",
+  "author": "SPA Tools",
+  "license": "MIT",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/spatools/komvvm.git"
+  },
+  "bugs": {
+    "url": "https://github.com/spatools/komvvm/issues"
+  },
+  "keywords": [
+    "knockout",
+    "knockoutjs",
+    "ko",
+    "mvvm",
+    "utilities",
+    "javascript",
+    "operation",
+    "command",
+    "spatools",
+    "umd",
+    "amd",
+    "commonjs"
+  ],
+  "dependencies": {
+    "knockout": "^3.5.0"
+  }
+}
