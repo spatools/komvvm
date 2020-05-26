@@ -3,7 +3,7 @@
   "description": "Knockout MVVM Extensions to help Knockout app development",
   "homepage": "https://github.com/spatools/komvvm",
   "license": "MIT",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "index.js",
   "authors": [
     "SPA Tools"
@@ -21,6 +21,6 @@
     "amd"
   ],
   "dependencies": {
-    "knockoutjs": "^3.4.0"
+    "knockout": "^3.4.0"
   }
 }
